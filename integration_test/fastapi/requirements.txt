@@ -1,0 +1,7 @@
+black
+isort
+pytest
+pytest-cov
+pytest-asyncio
+httpx
+asgi-lifespan

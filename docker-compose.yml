@@ -1,0 +1,49 @@
+version: "3.8"
+services:
+  fastapi:
+    container_name: fastapi
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      context: ./fastapi
+    ports:
+      - "8009:8009"
+    volumes:
+      - ./fastapi:/app:Z
+    env_file:
+      - .env
+    healthcheck:
+      test: curl --fail -X 'GET' 'http://localhost:8009/api/health'
+      interval: 30s
+      timeout: 15s
+      retries: 10
+  db:
+      image: postgres:14.1-alpine
+      container_name: db
+      restart: always
+      env_file:
+        - .env
+      ports:
+        - '5432:${POSTGRES_PORT}'
+      volumes:
+        - db:/var/lib/postgresql/data
+      healthcheck:
+        test: [ "CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}" ]
+        interval: 15s
+        timeout: 10s
+        retries: 10
+  integration:
+    container_name: api_integration
+    depends_on:
+      fastapi:
+        condition: service_healthy
+    build: ./integration_test/fastapi
+    volumes:
+      - ./integration_test/fastapi:/test:Z
+    env_file:
+      - .env
+volumes:
+  db:
+    driver: local
+  redis_data:
